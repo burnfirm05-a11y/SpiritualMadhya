@@ -1,0 +1,179 @@
+SpiritualMadhya/
+├── app/
+│   ├── src/main/java/com/spiritualmadhya/
+│   ├── src/main/res/layout/
+│   ├── src/main/res/values/
+│   └── src/main/AndroidManifest.xml
+├── app/build.gradle
+├── build.gradle
+├── settings.gradle
+└── gradle.properties
+rootProject.name = "SpiritualMadhya"
+include ':app'
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.1.2"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+org.gradle.jvmargs=-Xmx2048m
+android.useAndroidX=true
+android.enableJetifier=true
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
+
+android {
+    namespace "com.spiritualmadhya"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.spiritualmadhya"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:1.12.0"
+    implementation "androidx.appcompat:appcompat:1.6.1"
+}
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.spiritualmadhya">
+
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
+
+    <application
+        android:label="Spiritual Madhya"
+        android:allowBackup="false">
+
+        <service
+            android:name=".SleepService"
+            android:foregroundServiceType="microphone"/>
+
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>
+package com.spiritualmadhya
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import android.widget.Button
+
+class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        findViewById<Button>(R.id.start).setOnClickListener {
+            startForegroundService(Intent(this, SleepService::class.java))
+        }
+
+        findViewById<Button>(R.id.stop).setOnClickListener {
+            stopService(Intent(this, SleepService::class.java))
+        }
+    }
+}
+package com.spiritualmadhya
+
+import android.app.*
+import android.content.Intent
+import android.os.IBinder
+import androidx.core.app.NotificationCompat
+
+class SleepService : Service() {
+
+    override fun onCreate() {
+        super.onCreate()
+        startForeground(1, notification())
+    }
+
+    private fun notification(): Notification {
+        return NotificationCompat.Builder(this, "sleep")
+            .setContentTitle("Spiritual Madhya 🌙")
+            .setContentText("Sleep tracking active")
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .build()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+}
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/start"
+        android:text="Start Sleep Tracking"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/stop"
+        android:text="Stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+</LinearLayout>
+.github/workflows/build.yml
+name: Build APK
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpiritualMadhya-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
